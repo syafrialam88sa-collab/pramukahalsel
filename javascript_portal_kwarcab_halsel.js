@@ -6,7 +6,6 @@
 window.CURRENT_PAGE = 'home';
 window.CURRENT_ADMIN_TAB = 'gudep';
 
-// Daftar Kecamatan / Kwartir Ranting di Kabupaten Halmahera Selatan
 window.KECAMATAN_HALSEL = [
     "Bacan", "Bacan Selatan", "Bacan Barat", "Bacan Barat Utara", "Bacan Timur",
     "Bacan Timur Tengah", "Bacan Timur Selatan", "Kayoa", "Kayoa Barat", "Kayoa Selatan",
@@ -24,15 +23,12 @@ if (!localStorage.getItem('scout_chiefs')) localStorage.setItem('scout_chiefs', 
 if (!localStorage.getItem('scout_pengurus')) localStorage.setItem('scout_pengurus', JSON.stringify([]));
 if (!localStorage.getItem('scout_memoriam')) localStorage.setItem('scout_memoriam', JSON.stringify([]));
 if (!localStorage.getItem('scout_slideshow')) localStorage.setItem('scout_slideshow', JSON.stringify([]));
+if (!localStorage.getItem('scout_events')) localStorage.setItem('scout_events', JSON.stringify([]));
 if (!localStorage.getItem('scout_gudep')) localStorage.setItem('scout_gudep', JSON.stringify([]));
 if (!localStorage.getItem('scout_saka')) localStorage.setItem('scout_saka', JSON.stringify([]));
 if (!localStorage.getItem('scout_database')) localStorage.setItem('scout_database', JSON.stringify([]));
 if (!localStorage.getItem('scout_sertifikasi')) localStorage.setItem('scout_sertifikasi', JSON.stringify([]));
 if (!localStorage.getItem('scout_awards')) localStorage.setItem('scout_awards', JSON.stringify([]));
-if (!localStorage.getItem('template_shb_portrait')) localStorage.setItem('template_shb_portrait', '');
-if (!localStorage.getItem('template_shb_landscape')) localStorage.setItem('template_shb_landscape', '');
-if (!localStorage.getItem('template_shl_portrait')) localStorage.setItem('template_shl_portrait', '');
-if (!localStorage.getItem('template_shl_landscape')) localStorage.setItem('template_shl_landscape', '');
 
 /**
  * Mengisi dropdown pilihan Kwartir Ranting (Kecamatan)
@@ -42,49 +38,6 @@ window.populateKecamatanDropdown = function(elementId) {
     if (!select) return;
     select.innerHTML = '<option value="" disabled selected>-- Pilih Kwartir Ranting --</option>' + 
         window.KECAMATAN_HALSEL.map(k => `<option value="${k}">${k}</option>`).join('');
-};
-
-/**
- * Mengisi dropdown angka 0 sampai 100 untuk form Gudep
- */
-window.populate0100Dropdowns = function() {
-    window.populateKecamatanDropdown('gudep_ranting');
-    ['gudep_putera', 'gudep_puteri', 'gudep_pembina_kmd', 'gudep_pembina_kml', 'gudep_pembina_belum'].forEach(id => {
-        const select = document.getElementById(id);
-        if (select) {
-            select.innerHTML = Array.from({length: 101}, (_, i) => `<option value="${i}">${i}</option>`).join('');
-        }
-    });
-};
-
-/**
- * Mengisi dropdown angka untuk form Saka
- */
-window.populateSakaDropdowns = function() {
-    ['saka_didik_putera', 'saka_didik_puteri'].forEach(id => {
-        const select = document.getElementById(id);
-        if (select) select.innerHTML = Array.from({length: 201}, (_, i) => `<option value="${i}">${i}</option>`).join('');
-    });
-    ['saka_instruktur_putera', 'saka_instruktur_puteri', 'saka_pamong_putera', 'saka_pamong_puteri'].forEach(id => {
-        const select = document.getElementById(id);
-        if (select) select.innerHTML = Array.from({length: 101}, (_, i) => `<option value="${i}">${i}</option>`).join('');
-    });
-};
-
-/**
- * Memperbarui dropdown tingkat kepramukaan berdasarkan jenjang kategori
- */
-window.updateTingkatDropdown = function(kategoriId, tingkatId) {
-    const val = document.getElementById(kategoriId)?.value;
-    const tingSelect = document.getElementById(tingkatId);
-    if (!tingSelect) return;
-    let options = [];
-    if (val === 'Siaga') options = ['Mula', 'Bantu', 'Tata', 'Garuda'];
-    else if (val === 'Penggalang') options = ['Ramu', 'Rakit', 'Terap', 'Garuda'];
-    else if (val === 'Penegak') options = ['Bantara', 'Laksana', 'Garuda'];
-    else if (val === 'Pandega') options = ['Pandega', 'Garuda'];
-    else if (val === 'Pembina') options = ['KMD', 'KML', 'KPD', 'KPL'];
-    tingSelect.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join('');
 };
 
 /**
@@ -110,13 +63,7 @@ window.navigateTo = function(pageId) {
             window.populateKecamatanDropdown('award_pengusul');
         }
 
-        if (pageId === 'usul-gudep') window.populate0100Dropdowns();
-        if (pageId === 'usul-saka') window.populateSakaDropdowns();
-        if (pageId === 'reg-anggota') {
-            window.populateKecamatanDropdown('reg_ranting');
-            window.updateTingkatDropdown('reg_kategori', 'reg_tingkat_jenjang');
-        }
-        if (pageId === 'laporan-berkala') window.populateKecamatanDropdown('lap_ranting');
+        if (pageId === 'home') window.renderSlideshowCarousel();
         if (pageId === 'database') window.renderDatabaseTable();
         if (pageId === 'database-ranting') window.renderDatabaseRantingTable();
         if (pageId === 'admin-dashboard') window.renderAdminTab(window.CURRENT_ADMIN_TAB);
@@ -125,6 +72,8 @@ window.navigateTo = function(pageId) {
         if (pageId === 'pengurus') window.renderPublicPengurus();
         if (pageId === 'chief') window.renderPublicChiefs();
         if (pageId === 'in-memoriam') window.renderPublicMemoriam();
+        if (pageId === 'event') window.renderPublicEvents();
+        if (pageId === 'reg-anggota') window.populateKecamatanDropdown('reg_ranting');
     }
 };
 
@@ -162,17 +111,6 @@ window.handleAdminLogout = function() {
 };
 
 /**
- * Mengubah Label File Input saat berkas dipilih
- */
-window.updateGudepPdfLabel = function(inputElem, labelId) {
-    const lbl = document.getElementById(labelId);
-    if (inputElem.files && inputElem.files[0]) {
-        lbl.innerText = "Berkas: " + inputElem.files[0].name;
-        lbl.classList.add('text-pramukaGreen', 'font-bold');
-    }
-};
-
-/**
  * Render Tabs di Dashboard Dapur Admin
  */
 window.renderAdminTab = function(tabId) {
@@ -184,252 +122,376 @@ window.renderAdminTab = function(tabId) {
     const area = document.getElementById('admin-tab-content-area');
     if (!area) return;
 
-    if (tabId === 'gudep') {
-        const list = JSON.parse(localStorage.getItem('scout_gudep')) || [];
-        area.innerHTML = `<table class="w-full text-xs"><thead><tr class="bg-gray-50 border-b uppercase"><th class="p-2">Pangkalan</th><th class="p-2">Kecamatan</th><th class="p-2 text-center">Status</th><th class="p-2 text-center">Aksi</th></tr></thead><tbody>` +
-            (list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada usulan Gudep</td></tr>` :
-            list.map((item, idx) => `<tr><td class="p-2 font-bold">${item.sekolah}</td><td class="p-2">${item.ranting}</td><td class="p-2 text-center">${item.status}</td><td class="p-2 text-center"><button onclick="window.updateStatus('scout_gudep', ${idx}, 'Disetujui')" class="text-green-600 font-bold mr-2">Setuju</button><button onclick="window.updateStatus('scout_gudep', ${idx}, 'Ditolak')" class="text-red-600 font-bold">Tolak</button></td></tr>`).join('')) + `</tbody></table>`;
-    } else if (tabId === 'saka') {
-        const list = JSON.parse(localStorage.getItem('scout_saka')) || [];
-        area.innerHTML = `<table class="w-full text-xs"><thead><tr class="bg-gray-50 border-b uppercase"><th class="p-2">Saka</th><th class="p-2">Pangkalan</th><th class="p-2 text-center">Status</th><th class="p-2 text-center">Aksi</th></tr></thead><tbody>` +
-            (list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada usulan Saka</td></tr>` :
-            list.map((item, idx) => `<tr><td class="p-2 font-bold">${item.saka}</td><td class="p-2">${item.pangkalan}</td><td class="p-2 text-center">${item.status}</td><td class="p-2 text-center"><button onclick="window.updateStatus('scout_saka', ${idx}, 'Disetujui')" class="text-green-600 font-bold mr-2">Setuju</button><button onclick="window.updateStatus('scout_saka', ${idx}, 'Ditolak')" class="text-red-600 font-bold">Tolak</button></td></tr>`).join('')) + `</tbody></table>`;
-    } else if (tabId === 'registrasi') {
-        const list = JSON.parse(localStorage.getItem('scout_database')) || [];
-        area.innerHTML = `<table class="w-full text-xs"><thead><tr class="bg-gray-50 border-b uppercase"><th class="p-2">Nama</th><th class="p-2">Pangkalan</th><th class="p-2 text-center">Status</th><th class="p-2 text-center">Aksi</th></tr></thead><tbody>` +
-            (list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada registrasi terpadu</td></tr>` :
-            list.map((item, idx) => `<tr><td class="p-2 font-bold">${item.nama}</td><td class="p-2">${item.pangkalan}</td><td class="p-2 text-center">${item.status}</td><td class="p-2 text-center"><button onclick="window.updateStatus('scout_database', ${idx}, 'Disetujui')" class="text-green-600 font-bold mr-2">Setuju</button><button onclick="window.updateStatus('scout_database', ${idx}, 'Ditolak')" class="text-red-600 font-bold">Tolak</button></td></tr>`).join('')) + `</tbody></table>`;
-    } else if (tabId === 'sertifikasi') {
-        const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
+    if (tabId === 'profil') {
         area.innerHTML = `
             <div class="space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 rounded border">
+                <h4 class="font-bold text-gray-800 text-xs border-b pb-2 uppercase"><i class="fa-solid fa-filter"></i> Filter Kelola Profil</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <h4 class="font-bold text-pramukaGreen mb-2"><i class="fa-solid fa-id-card"></i> Template Kartu Sub Menu SHB</h4>
-                        <div class="space-y-2 text-xs">
-                            <div><label class="block font-semibold">Tampilan Depan (Portrait):</label><input type="file" id="up_shb_portrait" class="border p-1 rounded w-full bg-white" onchange="window.saveTemplate('shb_portrait', this)"></div>
-                            <div><label class="block font-semibold">Tampilan Belakang (Landscape):</label><input type="file" id="up_shb_landscape" class="border p-1 rounded w-full bg-white" onchange="window.saveTemplate('shb_landscape', this)"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-pramukaGreen mb-2"><i class="fa-solid fa-id-card"></i> Template Kartu Sub Menu SHL</h4>
-                        <div class="space-y-2 text-xs">
-                            <div><label class="block font-semibold">Tampilan Depan (Portrait):</label><input type="file" id="up_shl_portrait" class="border p-1 rounded w-full bg-white" onchange="window.saveTemplate('shl_portrait', this)"></div>
-                            <div><label class="block font-semibold">Tampilan Belakang (Landscape):</label><input type="file" id="up_shl_landscape" class="border p-1 rounded w-full bg-white" onchange="window.saveTemplate('shl_landscape', this)"></div>
-                        </div>
+                        <label class="block text-[10px] font-bold uppercase mb-1">Pilih Kategori Profil</label>
+                        <select id="admin_profil_filter" onchange="window.renderProfileFormSection()" class="w-full border p-2 rounded text-xs bg-white">
+                            <option value="pengurus">Pengurus</option>
+                            <option value="chief">Chief (Ketua Kwarcab)</option>
+                            <option value="memoriam">In Memoriam</option>
+                            <option value="narasi">Sejarah & Visi Misi</option>
+                        </select>
                     </div>
                 </div>
-
-                <div>
-                    <h4 class="font-bold text-gray-800 mb-3 uppercase tracking-wider text-xs">Daftar Pembina & Pelatih Registrasi Surat Hak Bina / Latih</h4>
-                    <table class="w-full text-xs">
-                        <thead>
-                            <tr class="bg-gray-100 border-b uppercase text-[10px]">
-                                <th class="p-2">Nama Lengkap</th>
-                                <th class="p-2">Tipe</th>
-                                <th class="p-2">Pangkalan</th>
-                                <th class="p-2 text-center">Status</th>
-                                <th class="p-2 text-center">Aksi (Lihat, Cetak Kartu, Hapus)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${list.length === 0 ? `<tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada data pengajuan sertifikasi</td></tr>` :
-                            list.map((item, idx) => `
-                                <tr class="border-b hover:bg-gray-50">
-                                    <td class="p-2 font-bold">${item.nama}</td>
-                                    <td class="p-2"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">${item.tipe}</span></td>
-                                    <td class="p-2">${item.pangkalan}</td>
-                                    <td class="p-2 text-center">${item.status}</td>
-                                    <td class="p-2 text-center flex items-center justify-center gap-3">
-                                        <button onclick="window.viewSertifikasiDetail(${idx})" class="text-blue-600 hover:text-blue-800" title="Lihat Berkas"><i class="fa-solid fa-eye text-sm"></i></button>
-                                        <button onclick="window.printSertifikasiCard(${idx})" class="text-pramukaGreen hover:text-emerald-800" title="Cetak Kartu"><i class="fa-solid fa-print text-sm"></i></button>
-                                        <button onclick="window.deleteSertifikasiItem(${idx})" class="text-red-600 hover:text-red-800" title="Hapus"><i class="fa-solid fa-trash text-sm"></i></button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
+                <div id="admin-profile-form-container" class="pt-4 border-t"></div>
             </div>
         `;
-    } else if (tabId === 'awards') {
-        const list = JSON.parse(localStorage.getItem('scout_awards')) || [];
-        area.innerHTML = `<table class="w-full text-xs"><thead><tr class="bg-gray-50 border-b uppercase"><th class="p-2">Nama</th><th class="p-2">Jenis Lencana</th><th class="p-2 text-center">Status</th><th class="p-2 text-center">Aksi</th></tr></thead><tbody>` +
-            (list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada usulan lencana awards</td></tr>` :
-            list.map((item, idx) => `<tr><td class="p-2 font-bold">${item.nama}</td><td class="p-2">${item.subType}</td><td class="p-2 text-center">${item.status}</td><td class="p-2 text-center"><button onclick="window.updateStatus('scout_awards', ${idx}, 'Disetujui')" class="text-green-600 font-bold mr-2">Setuju</button><button onclick="window.updateStatus('scout_awards', ${idx}, 'Ditolak')" class="text-red-600 font-bold">Tolak</button></td></tr>`).join('')) + `</tbody></table>`;
-    } else if (tabId === 'database') {
-        area.innerHTML = `<p class="font-bold mb-2">Total Anggota SIK: ${(JSON.parse(localStorage.getItem('scout_database')) || []).length}</p><button onclick="window.navigateTo('database')" class="bg-pramukaGreen text-white px-3 py-1.5 rounded text-xs">Buka Database Publik</button>`;
-    } else if (tabId === 'profil') {
+        window.renderProfileFormSection();
+    } else if (tabId === 'event') {
         area.innerHTML = `
             <div class="space-y-4">
-                <h4 class="font-bold uppercase border-b pb-1">Kelola Narasi Profil & Struktur</h4>
-                <textarea id="adm_sejarah" class="w-full border p-2 rounded text-xs" rows="4" placeholder="Sejarah Kwarcab...">${localStorage.getItem('scout_sejarah') || ''}</textarea>
-                <button onclick="localStorage.setItem('scout_sejarah', document.getElementById('adm_sejarah').value); window.showNotification('Sukses','Sejarah disimpan',true)" class="bg-pramukaGreen text-white px-4 py-2 rounded text-xs">Simpan Sejarah</button>
+                <h4 class="font-bold text-gray-800 text-xs border-b pb-2 uppercase"><i class="fa-solid fa-calendar-days"></i> Kelola Jadwal Event</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input type="text" id="ev_title" class="border p-2 text-xs rounded" placeholder="Nama Event">
+                    <input type="date" id="ev_date" class="border p-2 text-xs rounded">
+                    <input type="text" id="ev_location" class="border p-2 text-xs rounded" placeholder="Lokasi">
+                </div>
+                <textarea id="ev_desc" class="w-full border p-2 text-xs rounded" rows="2" placeholder="Deskripsi Event..."></textarea>
+                <button onclick="window.saveAdminEvent()" class="bg-pramukaGreen text-white px-4 py-2 rounded text-xs">Tambah Event</button>
+                <div id="admin-event-list" class="space-y-2 pt-4 border-t"></div>
             </div>
         `;
-    } else if (tabId === 'tampilan') {
-        area.innerHTML = `<p>Pengelolaan Tampilan & Slideshow aktif.</p>`;
+        window.renderAdminEventList();
+    } else if (tabId === 'slideshow') {
+        area.innerHTML = `
+            <div class="space-y-4">
+                <h4 class="font-bold text-gray-800 text-xs border-b pb-2 uppercase"><i class="fa-solid fa-images"></i> Kelola Tampilan Slideshow Teras</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input type="text" id="slide_title" class="border p-2 text-xs rounded" placeholder="Judul Kegiatan / Keterangan Slide">
+                    <input type="file" id="slide_file" accept="image/*" class="border p-1 text-xs rounded bg-white">
+                </div>
+                <button onclick="window.saveAdminSlide()" class="bg-pramukaGreen text-white px-4 py-2 rounded text-xs">Tambah Slide Teras</button>
+                <div id="admin-slide-list" class="space-y-2 pt-4 border-t"></div>
+            </div>
+        `;
+        window.renderAdminSlideList();
+    } else {
+        area.innerHTML = `<p class="text-xs text-gray-500">Modul ${tabId} aktif.</p>`;
     }
 };
 
-/**
- * Simpan template kartu sertifikasi
- */
-window.saveTemplate = function(type, inputElem) {
-    const file = inputElem.files[0];
-    if (file) {
+window.renderProfileFormSection = function() {
+    const filterVal = document.getElementById('admin_profil_filter')?.value || 'pengurus';
+    const container = document.getElementById('admin-profile-form-container');
+    if (!container) return;
+
+    if (filterVal === 'pengurus') {
+        container.innerHTML = `
+            <h5 class="font-bold text-xs text-pramukaGreen mb-3">Tambah / Kelola Pengurus</h5>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                <input type="text" id="p_nama" class="border p-2 text-xs rounded" placeholder="Nama Lengkap">
+                <input type="text" id="p_jabatan" class="border p-2 text-xs rounded" placeholder="Jabatan">
+                <input type="file" id="p_foto" class="border p-1 text-xs rounded bg-white">
+            </div>
+            <button onclick="window.saveAdminItem('pengurus')" class="bg-pramukaGreen text-white px-4 py-2 rounded text-xs mb-4">Simpan Pengurus</button>
+            <div id="admin-pengurus-list" class="space-y-2"></div>
+        `;
+        window.renderAdminList('pengurus');
+    } else if (filterVal === 'chief') {
+        container.innerHTML = `
+            <h5 class="font-bold text-xs text-pramukaGreen mb-3">Tambah / Kelola Chief</h5>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                <input type="text" id="c_nama" class="border p-2 text-xs rounded" placeholder="Nama Chief">
+                <input type="text" id="c_periode" class="border p-2 text-xs rounded" placeholder="Periode">
+                <input type="file" id="c_foto" class="border p-1 text-xs rounded bg-white">
+            </div>
+            <button onclick="window.saveAdminItem('chief')" class="bg-pramukaGreen text-white px-4 py-2 rounded text-xs mb-4">Simpan Chief</button>
+            <div id="admin-chief-list" class="space-y-2"></div>
+        `;
+        window.renderAdminList('chief');
+    } else if (filterVal === 'memoriam') {
+        container.innerHTML = `
+            <h5 class="font-bold text-xs text-pramukaGreen mb-3">Tambah / Kelola In Memoriam</h5>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                <input type="text" id="m_nama" class="border p-2 text-xs rounded" placeholder="Nama Tokoh">
+                <input type="text" id="m_waktu" class="border p-2 text-xs rounded" placeholder="Waktu / Tanggal Meninggal">
+                <input type="file" id="m_foto" class="border p-1 text-xs rounded bg-white">
+            </div>
+            <button onclick="window.saveAdminItem('memoriam')" class="bg-pramukaGreen text-white px-4 py-2 rounded text-xs mb-4">Simpan In Memoriam</button>
+            <div id="admin-memoriam-list" class="space-y-2"></div>
+        `;
+        window.renderAdminList('memoriam');
+    } else if (filterVal === 'narasi') {
+        container.innerHTML = `
+            <h5 class="font-bold text-xs text-pramukaGreen mb-3">Kelola Sejarah & Visi Misi</h5>
+            <div class="space-y-3">
+                <textarea id="adm_sejarah" class="w-full border p-2 rounded text-xs" rows="3" placeholder="Sejarah...">${localStorage.getItem('scout_sejarah') || ''}</textarea>
+                <textarea id="adm_visimisi" class="w-full border p-2 rounded text-xs" rows="3" placeholder="Visi Misi...">${localStorage.getItem('scout_visimisi') || ''}</textarea>
+                <button onclick="window.saveAdminNarasi()" class="bg-pramukaGreen text-white px-4 py-2 rounded text-xs">Simpan Narasi</button>
+            </div>
+        `;
+    }
+};
+
+window.saveAdminItem = function(type) {
+    if (type === 'pengurus') {
+        const nama = document.getElementById('p_nama').value;
+        const jabatan = document.getElementById('p_jabatan').value;
+        const fileInput = document.getElementById('p_foto').files[0];
+        if (!nama || !jabatan) return window.showNotification("Gagal", "Lengkapi form", false);
+        
         const reader = new FileReader();
         reader.onload = function(e) {
-            localStorage.setItem('template_' + type, e.target.result);
-            window.showNotification("Berhasil", "Template kartu berhasil diunggah.", true);
+            const list = JSON.parse(localStorage.getItem('scout_pengurus')) || [];
+            list.push({ nama, jabatan, url: e.target.result });
+            localStorage.setItem('scout_pengurus', JSON.stringify(list));
+            window.renderAdminList('pengurus');
+            window.showNotification("Sukses", "Pengurus disimpan", true);
         };
-        reader.readAsDataURL(file);
+        if (fileInput) reader.readAsDataURL(fileInput);
+        else {
+            const list = JSON.parse(localStorage.getItem('scout_pengurus')) || [];
+            list.push({ nama, jabatan, url: '' });
+            localStorage.setItem('scout_pengurus', JSON.stringify(list));
+            window.renderAdminList('pengurus');
+        }
+    } else if (type === 'chief') {
+        const nama = document.getElementById('c_nama').value;
+        const periode = document.getElementById('c_periode').value;
+        const fileInput = document.getElementById('c_foto').files[0];
+        if (!nama) return window.showNotification("Gagal", "Lengkapi form", false);
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const list = JSON.parse(localStorage.getItem('scout_chiefs')) || [];
+            list.push({ nama, periode, url: e.target.result });
+            localStorage.setItem('scout_chiefs', JSON.stringify(list));
+            window.renderAdminList('chief');
+            window.showNotification("Sukses", "Chief disimpan", true);
+        };
+        if (fileInput) reader.readAsDataURL(fileInput);
+        else {
+            const list = JSON.parse(localStorage.getItem('scout_chiefs')) || [];
+            list.push({ nama, periode, url: '' });
+            localStorage.setItem('scout_chiefs', JSON.stringify(list));
+            window.renderAdminList('chief');
+        }
+    } else if (type === 'memoriam') {
+        const nama = document.getElementById('m_nama').value;
+        const waktu = document.getElementById('m_waktu').value;
+        const fileInput = document.getElementById('m_foto').files[0];
+        if (!nama) return window.showNotification("Gagal", "Lengkapi form", false);
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const list = JSON.parse(localStorage.getItem('scout_memoriam')) || [];
+            list.push({ nama, waktu_kematian: waktu, url: e.target.result });
+            localStorage.setItem('scout_memoriam', JSON.stringify(list));
+            window.renderAdminList('memoriam');
+            window.showNotification("Sukses", "In Memoriam disimpan", true);
+        };
+        if (fileInput) reader.readAsDataURL(fileInput);
+        else {
+            const list = JSON.parse(localStorage.getItem('scout_memoriam')) || [];
+            list.push({ nama, waktu_kematian: waktu, url: '' });
+            localStorage.setItem('scout_memoriam', JSON.stringify(list));
+            window.renderAdminList('memoriam');
+        }
     }
 };
 
-window.viewSertifikasiDetail = function(idx) {
-    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
-    const item = list[idx];
-    window.showNotification("Detail Pengajuan", `Nama: ${item.nama}\nPangkalan: ${item.pangkalan}\nTipe: ${item.tipe}\nStatus: ${item.status}`, true);
-};
+window.renderAdminList = function(type) {
+    let key = type === 'pengurus' ? 'scout_pengurus' : (type === 'chief' ? 'scout_chiefs' : 'scout_memoriam');
+    let containerId = type === 'pengurus' ? 'admin-pengurus-list' : (type === 'chief' ? 'admin-chief-list' : 'admin-memoriam-list');
+    const container = document.getElementById(containerId);
+    if (!container) return;
 
-window.printSertifikasiCard = function(idx) {
-    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
-    const item = list[idx];
-    window.showNotification("Cetak Kartu", `Mencetak kartu sertifikasi ${item.tipe} untuk ${item.nama}...`, true);
-};
-
-window.deleteSertifikasiItem = function(idx) {
-    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
-    list.splice(idx, 1);
-    localStorage.setItem('scout_sertifikasi', JSON.stringify(list));
-    window.showNotification("Berhasil", "Data sertifikasi dihapus.", true);
-    window.renderAdminTab('sertifikasi');
-};
-
-window.updateStatus = function(key, idx, status) {
     const list = JSON.parse(localStorage.getItem(key)) || [];
-    list[idx].status = status;
+    container.innerHTML = list.map((item, idx) => `
+        <div class="flex justify-between items-center border p-2 rounded bg-gray-50">
+            <span>${item.nama} (${item.jabatan || item.periode || item.waktu_kematian || ''})</span>
+            <button onclick="window.deleteAdminItem('${key}', ${idx}, '${type}')" class="text-red-600 font-bold">Hapus</button>
+        </div>
+    `).join('');
+};
+
+window.deleteAdminItem = function(key, idx, type) {
+    const list = JSON.parse(localStorage.getItem(key)) || [];
+    list.splice(idx, 1);
     localStorage.setItem(key, JSON.stringify(list));
-    window.showNotification("Berhasil", "Status berhasil diperbarui.", true);
-    window.renderAdminTab(window.CURRENT_ADMIN_TAB);
+    window.renderAdminList(type);
+    window.showNotification("Sukses", "Data dihapus", true);
 };
 
-// Handlers Pengiriman Formulir
-window.handleAwardSubmit = function(e) {
-    e.preventDefault();
-    const subType = document.getElementById('award_sub_type').value;
-    const nama = document.getElementById('award_nama').value;
-    const list = JSON.parse(localStorage.getItem('scout_awards')) || [];
-    list.unshift({ subType, nama, status: 'Sedang diproses' });
-    localStorage.setItem('scout_awards', JSON.stringify(list));
-    window.showNotification("Terkirim", `Usulan lencana ${subType} berhasil dikirim.`, true);
-    window.navigateTo('cek-status');
+window.saveAdminNarasi = function() {
+    localStorage.setItem('scout_sejarah', document.getElementById('adm_sejarah').value);
+    localStorage.setItem('scout_visimisi', document.getElementById('adm_visimisi').value);
+    window.showNotification("Sukses", "Narasi berhasil disimpan", true);
 };
 
-window.handleGudepSubmit = function(e) {
-    e.preventDefault();
-    const list = JSON.parse(localStorage.getItem('scout_gudep')) || [];
-    list.unshift({ sekolah: document.getElementById('gudep_pangkalan').value, ranting: document.getElementById('gudep_ranting').value, status: 'Sedang diproses' });
-    localStorage.setItem('scout_gudep', JSON.stringify(list));
-    window.showNotification("Terkirim", "Usulan Gudep berhasil dikirim.", true);
-    window.navigateTo('cek-status');
+window.saveAdminEvent = function() {
+    const title = document.getElementById('ev_title').value;
+    const date = document.getElementById('ev_date').value;
+    const location = document.getElementById('ev_location').value;
+    const desc = document.getElementById('ev_desc').value;
+    if (!title || !date) return window.showNotification("Gagal", "Judul dan Tanggal wajib diisi", false);
+
+    const list = JSON.parse(localStorage.getItem('scout_events')) || [];
+    list.push({ title, date, location, desc });
+    localStorage.setItem('scout_events', JSON.stringify(list));
+    window.renderAdminEventList();
+    window.showNotification("Sukses", "Event berhasil ditambahkan", true);
 };
 
-window.handleSakaSubmit = function(e) {
-    e.preventDefault();
-    const list = JSON.parse(localStorage.getItem('scout_saka')) || [];
-    list.unshift({ pangkalan: document.getElementById('saka_pangkalan').value, saka: document.getElementById('saka_nama').value, status: 'Sedang diproses' });
-    localStorage.setItem('scout_saka', JSON.stringify(list));
-    window.showNotification("Terkirim", "Usulan Saka berhasil dikirim.", true);
-    window.navigateTo('cek-status');
+window.renderAdminEventList = function() {
+    const container = document.getElementById('admin-event-list');
+    if (!container) return;
+    const list = JSON.parse(localStorage.getItem('scout_events')) || [];
+    container.innerHTML = list.map((ev, idx) => `
+        <div class="flex justify-between items-center border p-2 rounded bg-gray-50">
+            <div><strong>${ev.title}</strong> - ${ev.date} (${ev.location})</div>
+            <button onclick="window.deleteEvent(${idx})" class="text-red-600 font-bold">Hapus</button>
+        </div>
+    `).join('');
 };
 
-window.handleLaporanSubmit = function(e) {
-    e.preventDefault();
-    window.showNotification("Terkirim", "Laporan berkala berhasil dikirim.", true);
-    window.navigateTo('cek-status');
+window.deleteEvent = function(idx) {
+    const list = JSON.parse(localStorage.getItem('scout_events')) || [];
+    list.splice(idx, 1);
+    localStorage.setItem('scout_events', JSON.stringify(list));
+    window.renderAdminEventList();
+    window.showNotification("Sukses", "Event dihapus", true);
 };
 
-window.handleUnifiedRegistration = function(e) {
-    e.preventDefault();
-    const list = JSON.parse(localStorage.getItem('scout_database')) || [];
-    list.unshift({ nama: document.getElementById('reg_nama').value, pangkalan: document.getElementById('reg_pangkalan').value, kategori: document.getElementById('reg_kategori').value, status: 'Aktif' });
-    localStorage.setItem('scout_database', JSON.stringify(list));
-    window.showNotification("Terkirim", "Registrasi anggota berhasil.", true);
-    window.navigateTo('database');
+window.saveAdminSlide = function() {
+    const title = document.getElementById('slide_title').value;
+    const fileInput = document.getElementById('slide_file').files[0];
+    if (!title) return window.showNotification("Gagal", "Judul slide wajib diisi", false);
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const list = JSON.parse(localStorage.getItem('scout_slideshow')) || [];
+        list.push({ title, url: e.target.result });
+        localStorage.setItem('scout_slideshow', JSON.stringify(list));
+        window.renderAdminSlideList();
+        window.showNotification("Sukses", "Slide berhasil ditambahkan", true);
+    };
+    if (fileInput) reader.readAsDataURL(fileInput);
+    else {
+        const list = JSON.parse(localStorage.getItem('scout_slideshow')) || [];
+        list.push({ title, url: 'https://placehold.co/1200x500/2d5a27/ffffff?text=' + encodeURIComponent(title) });
+        localStorage.setItem('scout_slideshow', JSON.stringify(list));
+        window.renderAdminSlideList();
+        window.showNotification("Sukses", "Slide berhasil ditambahkan", true);
+    }
 };
 
-window.handleShbSubmit = function(e) {
-    e.preventDefault();
-    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
-    list.unshift({ nama: document.getElementById('shb_nama').value, pangkalan: document.getElementById('shb_pangkalan').value, tipe: 'SHB', status: 'Sedang diproses' });
-    localStorage.setItem('scout_sertifikasi', JSON.stringify(list));
-    window.showNotification("Terkirim", "Pengajuan SHB berhasil.", true);
-    window.navigateTo('cek-status');
+window.renderAdminSlideList = function() {
+    const container = document.getElementById('admin-slide-list');
+    if (!container) return;
+    const list = JSON.parse(localStorage.getItem('scout_slideshow')) || [];
+    container.innerHTML = list.map((s, idx) => `
+        <div class="flex justify-between items-center border p-2 rounded bg-gray-50">
+            <span>${s.title}</span>
+            <button onclick="window.deleteSlide(${idx})" class="text-red-600 font-bold">Hapus</button>
+        </div>
+    `).join('');
 };
 
-window.handleShlSubmit = function(e) {
-    e.preventDefault();
-    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
-    list.unshift({ nama: document.getElementById('shl_nama').value, pangkalan: document.getElementById('shl_pangkalan').value, tipe: 'SHL', status: 'Sedang diproses' });
-    localStorage.setItem('scout_sertifikasi', JSON.stringify(list));
-    window.showNotification("Terkirim", "Pengajuan SHL berhasil.", true);
-    window.navigateTo('cek-status');
+window.deleteSlide = function(idx) {
+    const list = JSON.parse(localStorage.getItem('scout_slideshow')) || [];
+    list.splice(idx, 1);
+    localStorage.setItem('scout_slideshow', JSON.stringify(list));
+    window.renderAdminSlideList();
+    window.showNotification("Sukses", "Slide dihapus", true);
 };
 
-window.searchProposalStatus = function() {
-    const area = document.getElementById('status_result_area');
-    const gudeps = JSON.parse(localStorage.getItem('scout_gudep')) || [];
-    let html = gudeps.map(g => `<div class="p-3 border rounded bg-gray-50 flex justify-between"><span>Gudep: ${g.sekolah}</span><span class="font-bold text-pramukaGreen">${g.status}</span></div>`).join('');
-    area.innerHTML = html || '<p class="text-xs text-gray-400">Tidak ada data ditemukan.</p>';
+window.renderSlideshowCarousel = function() {
+    const container = document.getElementById('slideshow-container');
+    const indicators = document.getElementById('slideshow-indicators');
+    if (!container) return;
+
+    const list = JSON.parse(localStorage.getItem('scout_slideshow')) || [];
+    if (list.length === 0) {
+        container.innerHTML = `<div class="text-white/70 text-center p-6"><i class="fa-solid fa-flag-checkered text-4xl text-pramukaGold mb-2"></i><h3 class="text-lg font-bold">Kwartir Cabang Halmahera Selatan</h3><p class="text-xs text-gray-300">Portal Layanan Administrasi Terpadu Anggota Pramuka</p></div>`;
+        if (indicators) indicators.innerHTML = '';
+        return;
+    }
+
+    let currentIdx = 0;
+    const updateSlide = () => {
+        container.innerHTML = `
+            <img src="${list[currentIdx].url}" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-6">
+                <h4 class="text-white font-bold text-base sm:text-xl drop-shadow">${list[currentIdx].title}</h4>
+            </div>
+        `;
+        if (indicators) {
+            indicators.innerHTML = list.map((_, i) => `<span class="w-2.5 h-2.5 rounded-full ${i === currentIdx ? 'bg-pramukaGold w-6' : 'bg-white/50'} transition-all"></span>`).join('');
+        }
+    };
+
+    updateSlide();
+    if (list.length > 1) {
+        setInterval(() => {
+            currentIdx = (currentIdx + 1) % list.length;
+            updateSlide();
+        }, 4000);
+    }
 };
 
-window.renderDatabaseTable = function() {
-    const body = document.getElementById('db-explorer-body');
-    if (!body) return;
-    const list = JSON.parse(localStorage.getItem('scout_database')) || [];
-    body.innerHTML = list.length === 0 ? `<tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada data</td></tr>` :
-        list.map(i => `<tr><td class="p-3 font-bold">${i.nama}</td><td class="p-3">${i.kategori}</td><td class="p-3">${i.pangkalan}</td><td class="p-3">-</td><td class="p-3 text-center">${i.status}</td></tr>`).join('');
-};
-
-window.renderDatabaseRantingTable = function() {
-    const body = document.getElementById('ranting-explorer-body');
-    if (!body) return;
-    body.innerHTML = window.KECAMATAN_HALSEL.map((k, idx) => `<tr><td class="p-3">${idx+1}</td><td class="p-3 font-bold">Kwarran ${k}</td><td class="p-3 text-center">0</td><td class="p-3 text-center">0</td><td class="p-3 text-center">0</td><td class="p-3 text-center">0</td><td class="p-3 text-center">0</td><td class="p-3 text-center font-bold">0</td></tr>`).join('');
+window.renderPublicEvents = function() {
+    const container = document.getElementById('public-event-container');
+    if (!container) return;
+    const list = JSON.parse(localStorage.getItem('scout_events')) || [];
+    if (list.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-400 text-xs">Belum ada agenda event yang dipublikasikan.</div>`;
+        return;
+    }
+    container.innerHTML = list.map(ev => `
+        <div class="bg-white rounded-xl shadow p-5 border flex flex-col justify-between">
+            <div>
+                <span class="text-[10px] text-pramukaGreen font-bold uppercase"><i class="fa-regular fa-calendar mr-1"></i>${ev.date}</span>
+                <h4 class="font-bold text-gray-800 text-sm mt-1 mb-2">${ev.title}</h4>
+                <p class="text-xs text-gray-500 mb-4">${ev.desc}</p>
+            </div>
+            <span class="text-[10px] text-gray-400 font-semibold"><i class="fa-solid fa-location-dot mr-1 text-pramukaGold"></i>${ev.location}</span>
+        </div>
+    `).join('');
 };
 
 window.renderPublicPengurus = function() {
     const container = document.getElementById('pub-pengurus-container');
     if (!container) return;
-    container.innerHTML = `<p class="text-xs text-gray-500">Susunan jajaran pengurus cabang aktif.</p>`;
+    const list = JSON.parse(localStorage.getItem('scout_pengurus')) || [];
+    container.innerHTML = list.length === 0 ? `<p class="col-span-full text-xs text-gray-400">Belum ada data pengurus.</p>` :
+        list.map(p => `
+            <div class="bg-white rounded-xl p-4 shadow border text-center">
+                <img src="${p.url || 'https://placehold.co/150x200/2d5a27/ffffff?text=Pengurus'}" class="w-24 h-32 object-cover rounded mx-auto mb-3">
+                <h4 class="font-bold text-xs text-gray-800">${p.nama}</h4>
+                <span class="text-[10px] text-gray-500 block uppercase font-semibold mt-1">${p.jabatan}</span>
+            </div>
+        `).join('');
 };
 
 window.renderPublicChiefs = function() {
     const container = document.getElementById('pub-chief-container');
     if (!container) return;
-    container.innerHTML = `<p class="text-xs text-gray-500">Daftar ketua dari masa ke masa.</p>`;
+    const list = JSON.parse(localStorage.getItem('scout_chiefs')) || [];
+    container.innerHTML = list.length === 0 ? `<p class="col-span-full text-xs text-gray-400">Belum ada data chief.</p>` :
+        list.map(c => `
+            <div class="bg-white rounded-xl p-4 shadow border text-center">
+                <img src="${c.url || 'https://placehold.co/150x200/2d5a27/ffffff?text=Chief'}" class="w-24 h-32 object-cover rounded mx-auto mb-3">
+                <h4 class="font-bold text-xs text-gray-800">${c.nama}</h4>
+                <span class="text-[10px] text-gray-500 block uppercase font-semibold mt-1">Periode: ${c.periode}</span>
+            </div>
+        `).join('');
 };
 
 window.renderPublicMemoriam = function() {
     const container = document.getElementById('pub-memoriam-container');
     if (!container) return;
-    container.innerHTML = `<p class="text-xs text-gray-500">In memoriam tokoh pramuka.</p>`;
+    const list = JSON.parse(localStorage.getItem('scout_memoriam')) || [];
+    container.innerHTML = list.length === 0 ? `<p class="col-span-full text-xs text-gray-400">Belum ada data.</p>` :
+        list.map(m => `
+            <div class="bg-white rounded-xl p-4 shadow border text-center">
+                <img src="${m.url || 'https://placehold.co/150x200/2d5a27/ffffff?text=Memoriam'}" class="w-24 h-32 object-cover rounded mx-auto mb-3">
+                <h4 class="font-bold text-xs text-gray-800">${m.nama}</h4>
+                <span class="text-[10px] text-gray-500 block font-semibold mt-1">Wafat: ${m.waktu_kematian}</span>
+            </div>
+        `).join('');
 };
-
-window.openSkuModal = function() { document.getElementById('skuAiModal').classList.remove('hidden'); };
-window.closeSkuModal = function() { document.getElementById('skuAiModal').classList.add('hidden'); };
-window.startSkuUjian = function() {
-    document.getElementById('sku-setup-screen').classList.add('hidden');
-    document.getElementById('sku-play-screen').classList.remove('hidden');
-    document.getElementById('sku-question-area').innerText = "Sebutkan isi Dasa Darma Pramuka ke-1!";
-};
-window.handleSkuSubmit = function(e) {
-    e.preventDefault();
-    document.getElementById('sku-feedback-area').innerHTML = "<b>Evaluasi AI:</b> Bagus sekali, jawaban Kakak benar!";
-    document.getElementById('sku-feedback-area').classList.remove('hidden');
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-    window.navigateTo('home');
-});
