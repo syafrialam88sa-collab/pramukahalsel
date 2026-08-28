@@ -1,314 +1,435 @@
-// ==========================================
-// 1. STATE & DATABASE (Mock Data)
-// ==========================================
-let shbRegistrants = [
-    { id: 1, name: 'Siti Aminah, S.Pd', nta: '3204.01.0022', pangkalan: 'SMA Negeri 1 Halmahera Selatan', level: 'KMD Penggalang', date: '27 Feb 2026' },
-    { id: 2, name: 'Baharuddin, S.Pd.I', nta: '3204.02.0105', pangkalan: 'SMP Negeri 2 Labuha', level: 'KML Siaga', date: '25 Feb 2026' },
-    { id: 3, name: 'Nurul Hidayah', nta: '3204.01.0341', pangkalan: 'SD Negeri 1 Bacan', level: 'KMD Siaga', date: '24 Feb 2026' }
+/**
+ * SISTEM INFORMASI & PORTAL LAYANAN TERPADU - KWARCAB HALMAHERA SELATAN
+ * Berkas Utama Logika JavaScript (function.js)
+ */
+
+window.CURRENT_PAGE = 'home';
+window.CURRENT_ADMIN_TAB = 'gudep';
+
+// Daftar Kecamatan / Kwartir Ranting di Kabupaten Halmahera Selatan
+window.KECAMATAN_HALSEL = [
+    "Bacan", "Bacan Selatan", "Bacan Barat", "Bacan Barat Utara", "Bacan Timur",
+    "Bacan Timur Tengah", "Bacan Timur Selatan", "Kayoa", "Kayoa Barat", "Kayoa Selatan",
+    "Kayoa Utara", "Makian", "Makian Barat", "Pulau Makian", "Gane Barat",
+    "Gane Barat Utara", "Gane Barat Selatan", "Gane Timur", "Gane Timur Tengah",
+    "Gane Timur Selatan", "Obi", "Obi Barat", "Obi Timur", "Obi Selatan",
+    "Obi Utara", "Mandioli Selatan", "Mandioli Utara", "Kasiruta Barat",
+    "Kasiruta Timur", "Kepulauan Botang Lomang"
 ];
 
-let shlRegistrants = [
-    { id: 1, name: 'Drs. H. M. Kasim', nta: '3204.PL.001', ranting: 'Kwartir Ranting Bacan', level: 'KPD (Kader Pelatih)', date: '26 Feb 2026' },
-    { id: 2, name: 'Jamilah Abubakar, M.Pd', nta: '3204.PL.014', ranting: 'Kwartir Ranting Bacan Selatan', level: 'KPL (Pelatih Lanjutan)', date: '22 Feb 2026' }
-];
+// Inisialisasi LocalStorage Default jika belum ada
+if (!localStorage.getItem('scout_sejarah')) localStorage.setItem('scout_sejarah', "Sejarah pembentukan Kwarcab Halmahera Selatan...");
+if (!localStorage.getItem('scout_visimisi')) localStorage.setItem('scout_visimisi', "Visi & Misi Kwarcab Halmahera Selatan...");
+if (!localStorage.getItem('scout_chiefs')) localStorage.setItem('scout_chiefs', JSON.stringify([]));
+if (!localStorage.getItem('scout_pengurus')) localStorage.setItem('scout_pengurus', JSON.stringify([]));
+if (!localStorage.getItem('scout_memoriam')) localStorage.setItem('scout_memoriam', JSON.stringify([]));
+if (!localStorage.getItem('scout_slideshow')) localStorage.setItem('scout_slideshow', JSON.stringify([]));
+if (!localStorage.getItem('scout_gudep')) localStorage.setItem('scout_gudep', JSON.stringify([]));
+if (!localStorage.getItem('scout_saka')) localStorage.setItem('scout_saka', JSON.stringify([]));
+if (!localStorage.getItem('scout_database')) localStorage.setItem('scout_database', JSON.stringify([]));
+if (!localStorage.getItem('scout_sertifikasi')) localStorage.setItem('scout_sertifikasi', JSON.stringify([]));
+if (!localStorage.getItem('scout_awards')) localStorage.setItem('scout_awards', JSON.stringify([]));
+if (!localStorage.getItem('template_shb_portrait')) localStorage.setItem('template_shb_portrait', '');
+if (!localStorage.getItem('template_shb_landscape')) localStorage.setItem('template_shb_landscape', '');
+if (!localStorage.getItem('template_shl_portrait')) localStorage.setItem('template_shl_portrait', '');
+if (!localStorage.getItem('template_shl_landscape')) localStorage.setItem('template_shl_landscape', '');
 
-let kegiatanList = [
-    { id: 1, title: 'Musyawarah Cabang (Muscab) Gerakan Pramuka Halsel', date: '12 - 14 Maret 2026', location: 'Aula Kantor Bupati Halmahera Selatan', category: 'Andalan Cabang & Utusan Ranting', desc: 'Agenda lima tahunan evaluasi program kerja dan pemilihan Ketua Kwartir Cabang masa bakti berikutnya.' },
-    { id: 2, title: 'Kursus Mahir Dasar (KMD) Penggalang', date: '20 - 25 Maret 2026', location: 'SMP Negeri 1 Labuha', category: 'Pembina Gugus Depan', desc: 'Pelatihan wajib bagi pembina pangkalan sekolah yang belum memiliki lisensi kepramukaan dasar.' },
-    { id: 3, title: 'Perkemahan Hari Pramuka ke-65', date: '14 - 17 Agustus 2026', location: 'Bumi Perkemahan Saruma, Bacan', category: 'Semua Golongan', desc: 'Ajang pertemuan akbar pramuka penggalang dan penegak se-Halmahera Selatan.' }
-];
+/**
+ * Mengisi dropdown pilihan Kwartir Ranting (Kecamatan)
+ */
+window.populateKecamatanDropdown = function(elementId) {
+    const select = document.getElementById(elementId);
+    if (!select) return;
+    select.innerHTML = '<option value="" disabled selected>-- Pilih Kwartir Ranting --</option>' + 
+        window.KECAMATAN_HALSEL.map(k => `<option value="${k}">${k}</option>`).join('');
+};
 
-// ==========================================
-// 2. FUNGSI RENDER TAMPILAN (UI Rendering)
-// ==========================================
-window.renderRegistrantsTables = function() {
-    // Render SHB Table
-    const shbBody = document.getElementById('shbRegistrantsTableBody');
-    if (shbBody) {
-        if (shbRegistrants.length === 0) {
-            shbBody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400 font-medium bg-gray-50/50">Belum ada data pengajuan SHB.</td></tr>`;
-        } else {
-            shbBody.innerHTML = shbRegistrants.map((item, index) => `
-                <tr class="hover:bg-blue-50/30 transition-colors">
-                    <td class="p-4 font-bold text-gray-400">${index + 1}</td>
-                    <td class="p-4">
-                        <div class="font-bold text-gray-800">${item.name}</div>
-                        <div class="text-[10px] text-gray-500 font-medium uppercase tracking-wider mt-1"><i class="fa-regular fa-id-card text-pramukaGold mr-1"></i> NTA: ${item.nta}</div>
-                    </td>
-                    <td class="p-4 text-gray-600 font-medium"><i class="fa-solid fa-school text-gray-300 mr-2"></i>${item.pangkalan}</td>
-                    <td class="p-4"><span class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-wider border border-amber-200">${item.level}</span></td>
-                    <td class="p-4 text-center space-x-1">
-                        <button onclick="window.viewRegistrantDetail('shb', ${item.id})" title="Lihat Berkas" class="w-8 h-8 inline-flex items-center justify-center text-blue-600 hover:text-white hover:bg-blue-600 bg-blue-50 rounded-lg transition-all"><i class="fa-solid fa-eye"></i></button>
-                        <button onclick="window.printRegistrantCard('shb', ${item.id})" title="Cetak Kartu" class="w-8 h-8 inline-flex items-center justify-center text-emerald-600 hover:text-white hover:bg-emerald-600 bg-emerald-50 rounded-lg transition-all"><i class="fa-solid fa-print"></i></button>
-                        <button onclick="window.deleteRegistrant('shb', ${item.id})" title="Hapus" class="w-8 h-8 inline-flex items-center justify-center text-red-500 hover:text-white hover:bg-red-500 bg-red-50 rounded-lg transition-all"><i class="fa-solid fa-trash-can"></i></button>
-                    </td>
-                </tr>
-            `).join('');
+/**
+ * Mengisi dropdown angka 0 sampai 100 untuk form Gudep
+ */
+window.populate0100Dropdowns = function() {
+    window.populateKecamatanDropdown('gudep_ranting');
+    ['gudep_putera', 'gudep_puteri', 'gudep_pembina_kmd', 'gudep_pembina_kml', 'gudep_pembina_belum'].forEach(id => {
+        const select = document.getElementById(id);
+        if (select) {
+            select.innerHTML = Array.from({length: 101}, (_, i) => `<option value="${i}">${i}</option>`).join('');
         }
+    });
+};
+
+/**
+ * Mengisi dropdown angka untuk form Saka
+ */
+window.populateSakaDropdowns = function() {
+    ['saka_didik_putera', 'saka_didik_puteri'].forEach(id => {
+        const select = document.getElementById(id);
+        if (select) select.innerHTML = Array.from({length: 201}, (_, i) => `<option value="${i}">${i}</option>`).join('');
+    });
+    ['saka_instruktur_putera', 'saka_instruktur_puteri', 'saka_pamong_putera', 'saka_pamong_puteri'].forEach(id => {
+        const select = document.getElementById(id);
+        if (select) select.innerHTML = Array.from({length: 101}, (_, i) => `<option value="${i}">${i}</option>`).join('');
+    });
+};
+
+/**
+ * Memperbarui dropdown tingkat kepramukaan berdasarkan jenjang kategori
+ */
+window.updateTingkatDropdown = function(kategoriId, tingkatId) {
+    const val = document.getElementById(kategoriId)?.value;
+    const tingSelect = document.getElementById(tingkatId);
+    if (!tingSelect) return;
+    let options = [];
+    if (val === 'Siaga') options = ['Mula', 'Bantu', 'Tata', 'Garuda'];
+    else if (val === 'Penggalang') options = ['Ramu', 'Rakit', 'Terap', 'Garuda'];
+    else if (val === 'Penegak') options = ['Bantara', 'Laksana', 'Garuda'];
+    else if (val === 'Pandega') options = ['Pandega', 'Garuda'];
+    else if (val === 'Pembina') options = ['KMD', 'KML', 'KPD', 'KPL'];
+    tingSelect.innerHTML = options.map(o => `<option value="${o}">${o}</option>`).join('');
+};
+
+/**
+ * Navigasi antar halaman / menu portal
+ */
+window.navigateTo = function(pageId) {
+    if (pageId === 'admin-dashboard' && localStorage.getItem('admin_logged_in') !== 'true') {
+        pageId = 'admin-login';
     }
-
-    // Render SHL Table
-    const shlBody = document.getElementById('shlRegistrantsTableBody');
-    if (shlBody) {
-        if (shlRegistrants.length === 0) {
-            shlBody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-400 font-medium bg-gray-50/50">Belum ada data pengajuan SHL.</td></tr>`;
-        } else {
-            shlBody.innerHTML = shlRegistrants.map((item, index) => `
-                <tr class="hover:bg-orange-50/30 transition-colors">
-                    <td class="p-4 font-bold text-gray-400">${index + 1}</td>
-                    <td class="p-4">
-                        <div class="font-bold text-gray-800">${item.name}</div>
-                        <div class="text-[10px] text-gray-500 font-medium uppercase tracking-wider mt-1"><i class="fa-regular fa-id-card text-pramukaGold mr-1"></i> NTA: ${item.nta}</div>
-                    </td>
-                    <td class="p-4 text-gray-600 font-medium"><i class="fa-solid fa-map-location-dot text-gray-300 mr-2"></i>${item.ranting}</td>
-                    <td class="p-4"><span class="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-wider border border-orange-200">${item.level}</span></td>
-                    <td class="p-4 text-center space-x-1">
-                        <button onclick="window.viewRegistrantDetail('shl', ${item.id})" title="Lihat Berkas" class="w-8 h-8 inline-flex items-center justify-center text-blue-600 hover:text-white hover:bg-blue-600 bg-blue-50 rounded-lg transition-all"><i class="fa-solid fa-eye"></i></button>
-                        <button onclick="window.printRegistrantCard('shl', ${item.id})" title="Cetak Kartu" class="w-8 h-8 inline-flex items-center justify-center text-emerald-600 hover:text-white hover:bg-emerald-600 bg-emerald-50 rounded-lg transition-all"><i class="fa-solid fa-print"></i></button>
-                        <button onclick="window.deleteRegistrant('shl', ${item.id})" title="Hapus" class="w-8 h-8 inline-flex items-center justify-center text-red-500 hover:text-white hover:bg-red-500 bg-red-50 rounded-lg transition-all"><i class="fa-solid fa-trash-can"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-    }
-    window.renderAdminKegiatanList();
-};
-
-window.renderAdminKegiatanList = function() {
-    const tbody = document.getElementById('adminKegiatanTableBody');
-    if (tbody) {
-        if (kegiatanList.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-400 font-medium bg-gray-50/50">Belum ada jadwal kegiatan dipublikasikan.</td></tr>`;
-        } else {
-            tbody.innerHTML = kegiatanList.map((item, index) => `
-                <tr class="hover:bg-pramukaGreen/5 transition-colors">
-                    <td class="p-4 font-bold text-gray-400">${index + 1}</td>
-                    <td class="p-4">
-                        <div class="font-bold font-heading text-gray-800 text-sm mb-1">${item.title}</div>
-                        <div class="text-[10px] font-medium text-gray-500 flex items-center gap-3">
-                            <span><i class="fa-solid fa-calendar text-pramukaGreen mr-1"></i> ${item.date}</span>
-                            <span><i class="fa-solid fa-location-dot text-red-400 mr-1"></i> ${item.location}</span>
-                        </div>
-                    </td>
-                    <td class="p-4"><span class="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-wider">${item.category}</span></td>
-                    <td class="p-4 text-center">
-                        <button onclick="window.deleteKegiatan(${item.id})" title="Hapus Event" class="w-8 h-8 inline-flex items-center justify-center text-red-500 hover:text-white hover:bg-red-500 bg-red-50 rounded-lg transition-all"><i class="fa-solid fa-trash-can"></i></button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-    }
-};
-
-window.renderPublicKegiatan = function() {
-    const container = document.getElementById('publicKegiatanContainer');
-    if (container) {
-        if (kegiatanList.length === 0) {
-            container.innerHTML = `<div class="col-span-2 text-center text-gray-400 py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">Belum ada agenda kegiatan yang dijadwalkan saat ini.</div>`;
-        } else {
-            container.innerHTML = kegiatanList.map((item, index) => {
-                const colorSet = index % 2 === 0 ? 'bg-pramukaGreen/5 border-pramukaGreen/20 text-pramukaGreen' : 'bg-pramukaGold/5 border-pramukaGold/20 text-pramukaGoldDark';
-                return `
-                <div class="bg-white border border-gray-100 rounded-3xl p-6 shadow-lg shadow-gray-200/40 hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col justify-between group relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-24 h-24 ${colorSet.split(' ')[0]} rounded-bl-full -z-10 opacity-50"></div>
-                    <div>
-                        <div class="flex flex-wrap justify-between items-start gap-2 mb-4">
-                            <span class="bg-gray-100 text-gray-700 font-bold px-3 py-1 rounded-full text-[10px] uppercase tracking-wider border border-gray-200"><i class="fa-regular fa-clock mr-1"></i> ${item.date}</span>
-                            <span class="bg-pramukaGreen/10 text-pramukaGreen font-bold px-3 py-1 rounded-full text-[10px] uppercase tracking-wider">${item.category}</span>
-                        </div>
-                        <h3 class="font-bold font-heading text-gray-800 text-xl mb-3 group-hover:text-pramukaGreen transition-colors leading-snug">${item.title}</h3>
-                        <p class="text-sm text-gray-500 leading-relaxed font-light mb-6">${item.desc}</p>
-                    </div>
-                    <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
-                        <span class="text-xs font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100"><i class="fa-solid fa-map-pin text-red-500 mr-1.5"></i> ${item.location}</span>
-                        <button onclick="alert('Membuka detail lengkap kegiatan: ${item.title}')" class="w-8 h-8 rounded-full bg-pramukaGreen text-white flex items-center justify-center hover:bg-pramukaGold hover:text-pramukaGreenDark transition-colors shadow-md group-hover:animate-bounce"><i class="fa-solid fa-arrow-right text-xs"></i></button>
-                    </div>
-                </div>
-            `}).join('');
-        }
-    }
-};
-
-// ==========================================
-// 3. FUNGSI AKSI & CRUD
-// ==========================================
-window.saveNewKegiatan = function(e) {
-    e.preventDefault();
-    const newKegiatan = {
-        id: Date.now(),
-        title: document.getElementById('kegiatanTitle').value,
-        date: document.getElementById('kegiatanDate').value,
-        location: document.getElementById('kegiatanLocation').value,
-        category: document.getElementById('kegiatanCategory').value,
-        desc: document.getElementById('kegiatanDesc').value
-    };
-    kegiatanList.unshift(newKegiatan);
-    window.renderAdminKegiatanList();
-    e.target.reset();
-    alert('Event / Kegiatan baru berhasil dipublikasikan ke portal!');
-};
-
-window.deleteKegiatan = function(id) {
-    if (confirm('Hapus jadwal kegiatan ini?')) {
-        kegiatanList = kegiatanList.filter(x => x.id !== id);
-        window.renderAdminKegiatanList();
-    }
-};
-
-window.switchAdminSubTab = function(type) {
-    const btnShb = document.getElementById('tab-sub-shb');
-    const btnShl = document.getElementById('tab-sub-shl');
-    const contentShb = document.getElementById('sub-content-shb');
-    const contentShl = document.getElementById('sub-content-shl');
-
-    if (type === 'shb') {
-        btnShb.className = "flex-1 px-4 py-3 text-sm font-bold rounded-lg bg-white shadow-sm text-pramukaGreen transition-all";
-        btnShl.className = "flex-1 px-4 py-3 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-700 hover:bg-white/50 transition-all";
-        contentShb.classList.remove('hidden');
-        contentShl.classList.add('hidden');
-    } else {
-        btnShl.className = "flex-1 px-4 py-3 text-sm font-bold rounded-lg bg-white shadow-sm text-pramukaGreen transition-all";
-        btnShb.className = "flex-1 px-4 py-3 text-sm font-medium rounded-lg text-gray-500 hover:text-gray-700 hover:bg-white/50 transition-all";
-        contentShl.classList.remove('hidden');
-        contentShb.classList.add('hidden');
-    }
-};
-
-window.saveCardTemplate = function(type) {
-    alert(`Template Desain [${type.toUpperCase()}] berhasil diunggah dan disimpan ke server!`);
-};
-
-window.viewRegistrantDetail = function(type, id) {
-    const list = type === 'shb' ? shbRegistrants : shlRegistrants;
-    const item = list.find(x => x.id === id);
-    if (item) alert(`[Detail Berkas ${type.toUpperCase()}]\n\nNama: ${item.name}\nNTA: ${item.nta}\nUnit/Ranting: ${item.pangkalan || item.ranting}\nSertifikasi: ${item.level}\nTanggal: ${item.date}\nStatus: Terverifikasi Lengkap`);
-};
-
-window.printRegistrantCard = function(type, id) {
-    const list = type === 'shb' ? shbRegistrants : shlRegistrants;
-    const item = list.find(x => x.id === id);
-    if (item) alert(`Mencetak Kartu Anggota ${type.toUpperCase()} (Tampak Depan & Belakang) untuk: ${item.name}. Menyiapkan koneksi Printer...`);
-};
-
-window.deleteRegistrant = function(type, id) {
-    if (confirm('Hapus data registrasi ini dari database Kwarcab?')) {
-        if (type === 'shb') shbRegistrants = shbRegistrants.filter(x => x.id !== id);
-        else shlRegistrants = shlRegistrants.filter(x => x.id !== id);
-        window.renderRegistrantsTables();
-    }
-};
-
-// ==========================================
-// 4. FUNGSI NAVIGASI & ROUTING (SPA Logic)
-// ==========================================
-window.navigateTo = function(route) {
     const contentArea = document.getElementById('content-area');
-    if (!contentArea) return;
-
-    // Update Desktop Nav UI Styles
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active-nav-item');
-        if (link.getAttribute('onclick') && link.getAttribute('onclick').includes('admin-dashboard')) {
-            link.classList.add('text-red-500', 'bg-red-50/30');
-            link.classList.remove('bg-red-100');
-        }
+    const targetTemplate = document.getElementById('template-' + (pageId.startsWith('usul-awards-') ? 'usul-awards' : pageId));
+    if (targetTemplate && contentArea) {
+        window.location.hash = pageId;
+        contentArea.innerHTML = targetTemplate.innerHTML;
         
-        if(link.getAttribute('onclick') && link.getAttribute('onclick').includes(`'${route}'`)) {
-            if (route === 'admin-dashboard') {
-                link.classList.add('bg-red-100');
-            } else {
-                link.classList.add('active-nav-item');
-            }
+        if (pageId.startsWith('usul-awards-')) {
+            const awardType = pageId.replace('usul-awards-', '');
+            const formattedType = awardType.charAt(0).toUpperCase() + awardType.slice(1);
+            const titleHeader = document.getElementById('award-title-header');
+            const subTypeInput = document.getElementById('award_sub_type');
+            if (titleHeader) titleHeader.innerHTML = `<i class="fa-solid fa-medal text-pramukaGold"></i> Formulir Usulan Lencana Awards - ${formattedType}`;
+            if (subTypeInput) subTypeInput.value = formattedType;
+            window.populateKecamatanDropdown('award_pengusul');
         }
-    });
 
-    // Update Mobile Nav UI Styles
-    document.querySelectorAll('.mobile-nav-link').forEach(link => {
-        link.classList.remove('bg-gray-50', 'border-pramukaGreen', 'text-pramukaGreen');
-        link.classList.add('border-transparent');
-        
-        if(link.getAttribute('onclick') && link.getAttribute('onclick').includes(`'${route}'`) && route !== 'admin-dashboard') {
-             link.classList.add('bg-gray-50', 'border-pramukaGreen', 'text-pramukaGreen');
+        if (pageId === 'usul-gudep') window.populate0100Dropdowns();
+        if (pageId === 'usul-saka') window.populateSakaDropdowns();
+        if (pageId === 'reg-anggota') {
+            window.populateKecamatanDropdown('reg_ranting');
+            window.updateTingkatDropdown('reg_kategori', 'reg_tingkat_jenjang');
         }
-    });
-    
-    const template = document.getElementById('template-' + route);
-    if (template) {
-        contentArea.classList.remove('fade-in-up');
-        contentArea.innerHTML = template.innerHTML;
-        void contentArea.offsetWidth;
-        contentArea.classList.add('fade-in-up');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        if (route === 'admin-dashboard') setTimeout(window.renderRegistrantsTables, 100);
-        else if (route === 'kegiatan') setTimeout(window.renderPublicKegiatan, 100);
-    } else if (route !== 'home') {
-        window.navigateTo('home');
+        if (pageId === 'laporan-berkala') window.populateKecamatanDropdown('lap_ranting');
+        if (pageId === 'database') window.renderDatabaseTable();
+        if (pageId === 'database-ranting') window.renderDatabaseRantingTable();
+        if (pageId === 'admin-dashboard') window.renderAdminTab(window.CURRENT_ADMIN_TAB);
+        if (pageId === 'sejarah') document.getElementById('pub-sejarah-container').innerText = localStorage.getItem('scout_sejarah');
+        if (pageId === 'visi-misi') document.getElementById('pub-visimisi-container').innerText = localStorage.getItem('scout_visimisi');
+        if (pageId === 'pengurus') window.renderPublicPengurus();
+        if (pageId === 'chief') window.renderPublicChiefs();
+        if (pageId === 'in-memoriam') window.renderPublicMemoriam();
     }
 };
 
-window.handleAdminLogin = function(e) {
-    e.preventDefault();
-    const user = document.getElementById('adminUser').value;
-    const pass = document.getElementById('adminPass').value;
-    if (user === 'admin' && pass === 'pramuka2026') {
-        document.getElementById('admin-auth-container').classList.add('hidden');
-        document.getElementById('admin-panel-content').classList.remove('hidden');
-        window.renderRegistrantsTables();
+/**
+ * Menampilkan Modal Pemberitahuan
+ */
+window.showNotification = function(title, msg, isSuccess) {
+    document.getElementById('modalTitle').innerText = title;
+    document.getElementById('modalMessage').innerText = msg;
+    document.getElementById('scoutModal').classList.remove('hidden');
+};
+
+window.closeModal = function() {
+    document.getElementById('scoutModal').classList.add('hidden');
+};
+
+/**
+ * Proses Autentikasi Dapur Admin
+ */
+window.handleAdminLogin = function(event) {
+    event.preventDefault();
+    const u = document.getElementById('admin_user').value;
+    const p = document.getElementById('admin_pass').value;
+    if (u === 'kwarcab' && p === 'halselsaruma') {
+        localStorage.setItem('admin_logged_in', 'true');
+        window.navigateTo('admin-dashboard');
     } else {
-        alert('Akses Ditolak. Gunakan username/password demo: admin / pramuka2026');
+        window.showNotification("Gagal", "Username atau Password salah!", false);
     }
 };
 
 window.handleAdminLogout = function() {
-    document.getElementById('admin-panel-content').classList.add('hidden');
-    document.getElementById('admin-auth-container').classList.remove('hidden');
-    document.getElementById('adminUser').value = '';
-    document.getElementById('adminPass').value = '';
+    localStorage.removeItem('admin_logged_in');
+    window.navigateTo('home');
 };
 
-window.toggleMobileMenu = function() {
-    const sidebar = document.getElementById('mobileSidebar');
-    const content = document.getElementById('mobileSidebarContent');
-    if (sidebar.classList.contains('hidden')) {
-        sidebar.classList.remove('hidden');
-        setTimeout(() => {
-            sidebar.classList.remove('opacity-0');
-            content.classList.remove('-translate-x-full');
-        }, 10);
-    } else {
-        sidebar.classList.add('opacity-0');
-        content.classList.add('-translate-x-full');
-        setTimeout(() => {
-            sidebar.classList.add('hidden');
-        }, 300);
+/**
+ * Mengubah Label File Input saat berkas dipilih
+ */
+window.updateGudepPdfLabel = function(inputElem, labelId) {
+    const lbl = document.getElementById(labelId);
+    if (inputElem.files && inputElem.files[0]) {
+        lbl.innerText = "Berkas: " + inputElem.files[0].name;
+        lbl.classList.add('text-pramukaGreen', 'font-bold');
     }
 };
 
-// ==========================================
-// 5. INISIALISASI APLIKASI
-// ==========================================
+/**
+ * Render Tabs di Dashboard Dapur Admin
+ */
+window.renderAdminTab = function(tabId) {
+    window.CURRENT_ADMIN_TAB = tabId;
+    document.querySelectorAll('.tab-btn').forEach(b => b.className = 'tab-btn px-3 py-2 text-xs font-bold rounded bg-gray-100 text-gray-700');
+    const activeBtn = document.getElementById('btn-tab-' + tabId);
+    if (activeBtn) activeBtn.className = 'tab-btn px-3 py-2 text-xs font-extrabold rounded bg-pramukaGreen text-white shadow';
+
+    const area = document.getElementById('admin-tab-content-area');
+    if (!area) return;
+
+    if (tabId === 'gudep') {
+        const list = JSON.parse(localStorage.getItem('scout_gudep')) || [];
+        area.innerHTML = `<table class="w-full text-xs"><thead><tr class="bg-gray-50 border-b uppercase"><th class="p-2">Pangkalan</th><th class="p-2">Kecamatan</th><th class="p-2 text-center">Status</th><th class="p-2 text-center">Aksi</th></tr></thead><tbody>` +
+            (list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada usulan Gudep</td></tr>` :
+            list.map((item, idx) => `<tr><td class="p-2 font-bold">${item.sekolah}</td><td class="p-2">${item.ranting}</td><td class="p-2 text-center">${item.status}</td><td class="p-2 text-center"><button onclick="window.updateStatus('scout_gudep', ${idx}, 'Disetujui')" class="text-green-600 font-bold mr-2">Setuju</button><button onclick="window.updateStatus('scout_gudep', ${idx}, 'Ditolak')" class="text-red-600 font-bold">Tolak</button></td></tr>`).join('')) + `</tbody></table>`;
+    } else if (tabId === 'saka') {
+        const list = JSON.parse(localStorage.getItem('scout_saka')) || [];
+        area.innerHTML = `<table class="w-full text-xs"><thead><tr class="bg-gray-50 border-b uppercase"><th class="p-2">Saka</th><th class="p-2">Pangkalan</th><th class="p-2 text-center">Status</th><th class="p-2 text-center">Aksi</th></tr></thead><tbody>` +
+            (list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada usulan Saka</td></tr>` :
+            list.map((item, idx) => `<tr><td class="p-2 font-bold">${item.saka}</td><td class="p-2">${item.pangkalan}</td><td class="p-2 text-center">${item.status}</td><td class="p-2 text-center"><button onclick="window.updateStatus('scout_saka', ${idx}, 'Disetujui')" class="text-green-600 font-bold mr-2">Setuju</button><button onclick="window.updateStatus('scout_saka', ${idx}, 'Ditolak')" class="text-red-600 font-bold">Tolak</button></td></tr>`).join('')) + `</tbody></table>`;
+    } else if (tabId === 'registrasi') {
+        const list = JSON.parse(localStorage.getItem('scout_database')) || [];
+        area.innerHTML = `<table class="w-full text-xs"><thead><tr class="bg-gray-50 border-b uppercase"><th class="p-2">Nama</th><th class="p-2">Pangkalan</th><th class="p-2 text-center">Status</th><th class="p-2 text-center">Aksi</th></tr></thead><tbody>` +
+            (list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada registrasi terpadu</td></tr>` :
+            list.map((item, idx) => `<tr><td class="p-2 font-bold">${item.nama}</td><td class="p-2">${item.pangkalan}</td><td class="p-2 text-center">${item.status}</td><td class="p-2 text-center"><button onclick="window.updateStatus('scout_database', ${idx}, 'Disetujui')" class="text-green-600 font-bold mr-2">Setuju</button><button onclick="window.updateStatus('scout_database', ${idx}, 'Ditolak')" class="text-red-600 font-bold">Tolak</button></td></tr>`).join('')) + `</tbody></table>`;
+    } else if (tabId === 'sertifikasi') {
+        const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
+        area.innerHTML = `
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 rounded border">
+                    <div>
+                        <h4 class="font-bold text-pramukaGreen mb-2"><i class="fa-solid fa-id-card"></i> Template Kartu Sub Menu SHB</h4>
+                        <div class="space-y-2 text-xs">
+                            <div><label class="block font-semibold">Tampilan Depan (Portrait):</label><input type="file" id="up_shb_portrait" class="border p-1 rounded w-full bg-white" onchange="window.saveTemplate('shb_portrait', this)"></div>
+                            <div><label class="block font-semibold">Tampilan Belakang (Landscape):</label><input type="file" id="up_shb_landscape" class="border p-1 rounded w-full bg-white" onchange="window.saveTemplate('shb_landscape', this)"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-pramukaGreen mb-2"><i class="fa-solid fa-id-card"></i> Template Kartu Sub Menu SHL</h4>
+                        <div class="space-y-2 text-xs">
+                            <div><label class="block font-semibold">Tampilan Depan (Portrait):</label><input type="file" id="up_shl_portrait" class="border p-1 rounded w-full bg-white" onchange="window.saveTemplate('shl_portrait', this)"></div>
+                            <div><label class="block font-semibold">Tampilan Belakang (Landscape):</label><input type="file" id="up_shl_landscape" class="border p-1 rounded w-full bg-white" onchange="window.saveTemplate('shl_landscape', this)"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-800 mb-3 uppercase tracking-wider text-xs">Daftar Pembina & Pelatih Registrasi Surat Hak Bina / Latih</h4>
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-gray-100 border-b uppercase text-[10px]">
+                                <th class="p-2">Nama Lengkap</th>
+                                <th class="p-2">Tipe</th>
+                                <th class="p-2">Pangkalan</th>
+                                <th class="p-2 text-center">Status</th>
+                                <th class="p-2 text-center">Aksi (Lihat, Cetak Kartu, Hapus)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${list.length === 0 ? `<tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada data pengajuan sertifikasi</td></tr>` :
+                            list.map((item, idx) => `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="p-2 font-bold">${item.nama}</td>
+                                    <td class="p-2"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-bold">${item.tipe}</span></td>
+                                    <td class="p-2">${item.pangkalan}</td>
+                                    <td class="p-2 text-center">${item.status}</td>
+                                    <td class="p-2 text-center flex items-center justify-center gap-3">
+                                        <button onclick="window.viewSertifikasiDetail(${idx})" class="text-blue-600 hover:text-blue-800" title="Lihat Berkas"><i class="fa-solid fa-eye text-sm"></i></button>
+                                        <button onclick="window.printSertifikasiCard(${idx})" class="text-pramukaGreen hover:text-emerald-800" title="Cetak Kartu"><i class="fa-solid fa-print text-sm"></i></button>
+                                        <button onclick="window.deleteSertifikasiItem(${idx})" class="text-red-600 hover:text-red-800" title="Hapus"><i class="fa-solid fa-trash text-sm"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } else if (tabId === 'awards') {
+        const list = JSON.parse(localStorage.getItem('scout_awards')) || [];
+        area.innerHTML = `<table class="w-full text-xs"><thead><tr class="bg-gray-50 border-b uppercase"><th class="p-2">Nama</th><th class="p-2">Jenis Lencana</th><th class="p-2 text-center">Status</th><th class="p-2 text-center">Aksi</th></tr></thead><tbody>` +
+            (list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-gray-400">Belum ada usulan lencana awards</td></tr>` :
+            list.map((item, idx) => `<tr><td class="p-2 font-bold">${item.nama}</td><td class="p-2">${item.subType}</td><td class="p-2 text-center">${item.status}</td><td class="p-2 text-center"><button onclick="window.updateStatus('scout_awards', ${idx}, 'Disetujui')" class="text-green-600 font-bold mr-2">Setuju</button><button onclick="window.updateStatus('scout_awards', ${idx}, 'Ditolak')" class="text-red-600 font-bold">Tolak</button></td></tr>`).join('')) + `</tbody></table>`;
+    } else if (tabId === 'database') {
+        area.innerHTML = `<p class="font-bold mb-2">Total Anggota SIK: ${(JSON.parse(localStorage.getItem('scout_database')) || []).length}</p><button onclick="window.navigateTo('database')" class="bg-pramukaGreen text-white px-3 py-1.5 rounded text-xs">Buka Database Publik</button>`;
+    } else if (tabId === 'profil') {
+        area.innerHTML = `
+            <div class="space-y-4">
+                <h4 class="font-bold uppercase border-b pb-1">Kelola Narasi Profil & Struktur</h4>
+                <textarea id="adm_sejarah" class="w-full border p-2 rounded text-xs" rows="4" placeholder="Sejarah Kwarcab...">${localStorage.getItem('scout_sejarah') || ''}</textarea>
+                <button onclick="localStorage.setItem('scout_sejarah', document.getElementById('adm_sejarah').value); window.showNotification('Sukses','Sejarah disimpan',true)" class="bg-pramukaGreen text-white px-4 py-2 rounded text-xs">Simpan Sejarah</button>
+            </div>
+        `;
+    } else if (tabId === 'tampilan') {
+        area.innerHTML = `<p>Pengelolaan Tampilan & Slideshow aktif.</p>`;
+    }
+};
+
+/**
+ * Simpan template kartu sertifikasi
+ */
+window.saveTemplate = function(type, inputElem) {
+    const file = inputElem.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            localStorage.setItem('template_' + type, e.target.result);
+            window.showNotification("Berhasil", "Template kartu berhasil diunggah.", true);
+        };
+        reader.readAsDataURL(file);
+    }
+};
+
+window.viewSertifikasiDetail = function(idx) {
+    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
+    const item = list[idx];
+    window.showNotification("Detail Pengajuan", `Nama: ${item.nama}\nPangkalan: ${item.pangkalan}\nTipe: ${item.tipe}\nStatus: ${item.status}`, true);
+};
+
+window.printSertifikasiCard = function(idx) {
+    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
+    const item = list[idx];
+    window.showNotification("Cetak Kartu", `Mencetak kartu sertifikasi ${item.tipe} untuk ${item.nama}...`, true);
+};
+
+window.deleteSertifikasiItem = function(idx) {
+    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
+    list.splice(idx, 1);
+    localStorage.setItem('scout_sertifikasi', JSON.stringify(list));
+    window.showNotification("Berhasil", "Data sertifikasi dihapus.", true);
+    window.renderAdminTab('sertifikasi');
+};
+
+window.updateStatus = function(key, idx, status) {
+    const list = JSON.parse(localStorage.getItem(key)) || [];
+    list[idx].status = status;
+    localStorage.setItem(key, JSON.stringify(list));
+    window.showNotification("Berhasil", "Status berhasil diperbarui.", true);
+    window.renderAdminTab(window.CURRENT_ADMIN_TAB);
+};
+
+// Handlers Pengiriman Formulir
+window.handleAwardSubmit = function(e) {
+    e.preventDefault();
+    const subType = document.getElementById('award_sub_type').value;
+    const nama = document.getElementById('award_nama').value;
+    const list = JSON.parse(localStorage.getItem('scout_awards')) || [];
+    list.unshift({ subType, nama, status: 'Sedang diproses' });
+    localStorage.setItem('scout_awards', JSON.stringify(list));
+    window.showNotification("Terkirim", `Usulan lencana ${subType} berhasil dikirim.`, true);
+    window.navigateTo('cek-status');
+};
+
+window.handleGudepSubmit = function(e) {
+    e.preventDefault();
+    const list = JSON.parse(localStorage.getItem('scout_gudep')) || [];
+    list.unshift({ sekolah: document.getElementById('gudep_pangkalan').value, ranting: document.getElementById('gudep_ranting').value, status: 'Sedang diproses' });
+    localStorage.setItem('scout_gudep', JSON.stringify(list));
+    window.showNotification("Terkirim", "Usulan Gudep berhasil dikirim.", true);
+    window.navigateTo('cek-status');
+};
+
+window.handleSakaSubmit = function(e) {
+    e.preventDefault();
+    const list = JSON.parse(localStorage.getItem('scout_saka')) || [];
+    list.unshift({ pangkalan: document.getElementById('saka_pangkalan').value, saka: document.getElementById('saka_nama').value, status: 'Sedang diproses' });
+    localStorage.setItem('scout_saka', JSON.stringify(list));
+    window.showNotification("Terkirim", "Usulan Saka berhasil dikirim.", true);
+    window.navigateTo('cek-status');
+};
+
+window.handleLaporanSubmit = function(e) {
+    e.preventDefault();
+    window.showNotification("Terkirim", "Laporan berkala berhasil dikirim.", true);
+    window.navigateTo('cek-status');
+};
+
+window.handleUnifiedRegistration = function(e) {
+    e.preventDefault();
+    const list = JSON.parse(localStorage.getItem('scout_database')) || [];
+    list.unshift({ nama: document.getElementById('reg_nama').value, pangkalan: document.getElementById('reg_pangkalan').value, kategori: document.getElementById('reg_kategori').value, status: 'Aktif' });
+    localStorage.setItem('scout_database', JSON.stringify(list));
+    window.showNotification("Terkirim", "Registrasi anggota berhasil.", true);
+    window.navigateTo('database');
+};
+
+window.handleShbSubmit = function(e) {
+    e.preventDefault();
+    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
+    list.unshift({ nama: document.getElementById('shb_nama').value, pangkalan: document.getElementById('shb_pangkalan').value, tipe: 'SHB', status: 'Sedang diproses' });
+    localStorage.setItem('scout_sertifikasi', JSON.stringify(list));
+    window.showNotification("Terkirim", "Pengajuan SHB berhasil.", true);
+    window.navigateTo('cek-status');
+};
+
+window.handleShlSubmit = function(e) {
+    e.preventDefault();
+    const list = JSON.parse(localStorage.getItem('scout_sertifikasi')) || [];
+    list.unshift({ nama: document.getElementById('shl_nama').value, pangkalan: document.getElementById('shl_pangkalan').value, tipe: 'SHL', status: 'Sedang diproses' });
+    localStorage.setItem('scout_sertifikasi', JSON.stringify(list));
+    window.showNotification("Terkirim", "Pengajuan SHL berhasil.", true);
+    window.navigateTo('cek-status');
+};
+
+window.searchProposalStatus = function() {
+    const area = document.getElementById('status_result_area');
+    const gudeps = JSON.parse(localStorage.getItem('scout_gudep')) || [];
+    let html = gudeps.map(g => `<div class="p-3 border rounded bg-gray-50 flex justify-between"><span>Gudep: ${g.sekolah}</span><span class="font-bold text-pramukaGreen">${g.status}</span></div>`).join('');
+    area.innerHTML = html || '<p class="text-xs text-gray-400">Tidak ada data ditemukan.</p>';
+};
+
+window.renderDatabaseTable = function() {
+    const body = document.getElementById('db-explorer-body');
+    if (!body) return;
+    const list = JSON.parse(localStorage.getItem('scout_database')) || [];
+    body.innerHTML = list.length === 0 ? `<tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada data</td></tr>` :
+        list.map(i => `<tr><td class="p-3 font-bold">${i.nama}</td><td class="p-3">${i.kategori}</td><td class="p-3">${i.pangkalan}</td><td class="p-3">-</td><td class="p-3 text-center">${i.status}</td></tr>`).join('');
+};
+
+window.renderDatabaseRantingTable = function() {
+    const body = document.getElementById('ranting-explorer-body');
+    if (!body) return;
+    body.innerHTML = window.KECAMATAN_HALSEL.map((k, idx) => `<tr><td class="p-3">${idx+1}</td><td class="p-3 font-bold">Kwarran ${k}</td><td class="p-3 text-center">0</td><td class="p-3 text-center">0</td><td class="p-3 text-center">0</td><td class="p-3 text-center">0</td><td class="p-3 text-center">0</td><td class="p-3 text-center font-bold">0</td></tr>`).join('');
+};
+
+window.renderPublicPengurus = function() {
+    const container = document.getElementById('pub-pengurus-container');
+    if (!container) return;
+    container.innerHTML = `<p class="text-xs text-gray-500">Susunan jajaran pengurus cabang aktif.</p>`;
+};
+
+window.renderPublicChiefs = function() {
+    const container = document.getElementById('pub-chief-container');
+    if (!container) return;
+    container.innerHTML = `<p class="text-xs text-gray-500">Daftar ketua dari masa ke masa.</p>`;
+};
+
+window.renderPublicMemoriam = function() {
+    const container = document.getElementById('pub-memoriam-container');
+    if (!container) return;
+    container.innerHTML = `<p class="text-xs text-gray-500">In memoriam tokoh pramuka.</p>`;
+};
+
+window.openSkuModal = function() { document.getElementById('skuAiModal').classList.remove('hidden'); };
+window.closeSkuModal = function() { document.getElementById('skuAiModal').classList.add('hidden'); };
+window.startSkuUjian = function() {
+    document.getElementById('sku-setup-screen').classList.add('hidden');
+    document.getElementById('sku-play-screen').classList.remove('hidden');
+    document.getElementById('sku-question-area').innerText = "Sebutkan isi Dasa Darma Pramuka ke-1!";
+};
+window.handleSkuSubmit = function(e) {
+    e.preventDefault();
+    document.getElementById('sku-feedback-area').innerHTML = "<b>Evaluasi AI:</b> Bagus sekali, jawaban Kakak benar!";
+    document.getElementById('sku-feedback-area').classList.remove('hidden');
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     window.navigateTo('home');
-
-    const mobileBtn = document.getElementById('mobileMenuBtn');
-    const closeBtn = document.getElementById('closeMobileMenuBtn');
-    const sidebar = document.getElementById('mobileSidebar');
-
-    if (mobileBtn) mobileBtn.addEventListener('click', window.toggleMobileMenu);
-    if (closeBtn) closeBtn.addEventListener('click', window.toggleMobileMenu);
-    if (sidebar) {
-        sidebar.addEventListener('click', (e) => {
-            if (e.target === sidebar) window.toggleMobileMenu();
-        });
-    }
-
-    document.querySelectorAll('.mobile-accordion-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const sub = btn.nextElementSibling;
-            const icon = btn.querySelector('.fa-chevron-down');
-            sub.classList.toggle('hidden');
-            icon.classList.toggle('rotate-180');
-        });
-    });
 });
